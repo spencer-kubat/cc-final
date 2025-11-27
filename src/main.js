@@ -23,7 +23,7 @@ loader.load(
 );
 
 // LIGHT
-const light = new THREE.PointLight(0x975111, 10, 1000);
+const light = new THREE.PointLight(0x975111, 50, 1000);
 light.position.set(0, 3, 0);
 scene.add(light);
 
