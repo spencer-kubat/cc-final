@@ -1,29 +1,53 @@
 import './style.css' // Vite handles CSS imports for you!
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-// 1. Scene Setup
+
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
 
-renderer.setSize(window.innerWidth, window.innerHeight);
+// LOAD GLB
+const loader = new GLTFLoader();
+loader.load(
+    './CreativeCoding.glb',
+    function (gltf) {
+        scene.add(gltf.scene);
+        console.log("Model loaded", gltf);
+    },
+    function (xhr) {
+        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    },
+    function (error) {
+        console.error('Error loading GLTF:', error);
+    }
+);
+
+// LIGHT
+const light = new THREE.PointLight(0x975111, 10, 1000);
+light.position.set(0, 3, 0);
+scene.add(light);
+
+// CAMERA
+const width = window.innerWidth;
+const height = window.innerHeight;
+const camera = new THREE.PerspectiveCamera(70, width / height, 0.01, 100);
+camera.position.z = 2;
+
+// RENDERER
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(width, height);
 document.body.appendChild(renderer.domElement);
 
-// 2. Add a Cube
-const geometry = new THREE.BoxGeometry();
-const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-const cube = new THREE.Mesh(geometry, material);
-scene.add(cube);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;   // smooth motion
+controls.dampingFactor = 0.05;
+controls.target.set(0, 0, 0);    // point camera looks at
 
-camera.position.z = 5;
-
-// 3. Animation Loop
+// ANIMATE LOOP
 function animate() {
     requestAnimationFrame(animate);
 
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
-
+    controls.update(); // needed if enableDamping = true
     renderer.render(scene, camera);
 }
 animate();
