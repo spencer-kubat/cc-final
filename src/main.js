@@ -34,7 +34,9 @@ scene.add(light);
 const width = window.innerWidth;
 const height = window.innerHeight;
 const camera = new THREE.PerspectiveCamera(70, width / height, 0.01, 100);
-camera.position.z = 2;
+camera.position.z = 1;
+camera.position.y = 40;
+camera.position.x = 10;
 
 // RENDERER
 const renderer = new THREE.WebGLRenderer({ antialias: true });
