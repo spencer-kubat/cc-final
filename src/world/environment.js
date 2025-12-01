@@ -2,17 +2,27 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export function loadEnvironment(scene) {
-    // 1. Lights
-    const ambient = new THREE.AmbientLight(0x404040, 2); // Soft blue-ish light
-    const spot = new THREE.SpotLight(0xffffff, 5);
-    spot.position.set(0, 50, 0);
-    scene.add(ambient, spot);
+    // AboveWater LIGHT
+    const light = new THREE.DirectionalLight(0xffffff, 2);
+    light.position.set(10, 20, 10);
+    scene.add(light);
 
-    // 2. Load the Map
+    scene.add(new THREE.AmbientLight(0x88aaff, 0.6));
+    scene.fog = new THREE.FogExp2(0x7db6ff,0.02); //adjust 2nd parameter for density of fog
+    // LOAD GLB
     const loader = new GLTFLoader();
-    loader.load('CreativeCoding.glb', (gltf) => {
-        gltf.scene.scale.set(1, 1, 1);
-        scene.add(gltf.scene);
-        console.log("Environment loaded");
-    });
+    loader.load(
+        './WaterEnvironment.glb',
+        function (gltf) {
+
+            scene.add(gltf.scene);
+            console.log("Model loaded", gltf);
+        },
+        function (xhr) {
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        },
+        function (error) {
+            console.error('Error loading GLTF:', error);
+        }
+    );
 }
