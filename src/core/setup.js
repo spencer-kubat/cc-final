@@ -6,7 +6,7 @@ export function createScene() {
 
 
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
-    camera.position.set(0, 0, 10); // Start back a bit
+    camera.position.set(0, 30, 10); // Start back a bit
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
