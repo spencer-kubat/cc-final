@@ -1,112 +1,126 @@
-/* Handles Webcam and ML5 Logic.
-   Independent of Three.js.
-*/
+/* global ml5 */
 
-let video;
 let handPose;
-let hands = []; // Stores the raw hand data from ml5
+let video;
+let hands = [];
+let swimIntensity = 0;
+let lastWristDist = 0;
 
-// State for the "Swim Physics"
-let swimIntensity = 0;   // The current speed (0.0 to 1.0)
-let lastWristDist = 0;   // Distance between wrists in the previous frame
+// Debugging Variables
+let debugCanvas;
+let ctx;
 
 export async function initHandTracking() {
-    // 1. Create a hidden video element
+    // 1. Setup Video (Hidden)
     video = document.createElement('video');
-    video.width = 640;
-    video.height = 480;
-    video.autoplay = true;
     video.playsInline = true;
+    video.autoplay = true;
     video.muted = true;
-    video.flipped = true;
+    video.width = 640;  // Force standard resolution
+    video.height = 480;
 
-    // Optional: Attach to DOM if you want to see the debug camera
-    document.body.appendChild(video);
-    video.style.position = 'absolute';
-    video.style.bottom = '10px';
-    video.style.left = '10px';
-    video.style.width = '200px';
-    video.style.opacity = '0.5';
+    // 2. Setup the Visual Debugger (The Canvas)
+    setupDebugCanvas();
 
+    // 3. Start Camera
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    video.play();
 
-    // 2. Start Webcam
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-        video.play();
-
-        // 2. Wait for Video to actually have data (Crucial!)
-        video.onloadeddata = () => {
-            console.log("Video data loaded. Initializing ML5...");
-
-            // 3. Initialize ML5 with a CALLBACK
-            //    Pass 'modelLoaded' as the 3rd argument
-            handPose = ml5.handPose({ flipped: true }, modelLoaded);
-        };
-    } catch (err) {
-        console.error("Camera access denied:", err);
-    }
+    video.onloadeddata = () => {
+        console.log("Video loaded. Starting ML5...");
+        // Initialize ML5
+        handPose = ml5.handPose({ flipped: false }, modelLoaded);
+    };
 }
 
-// 4. This runs ONLY when the AI is fully downloaded
 function modelLoaded() {
-    console.log("Model Loaded! Starting detection loop...");
-
-    // NOW it is safe to start detecting
+    console.log("Model Loaded!");
+    // Start the detection loop
     handPose.detectStart(video, (results) => {
         hands = results;
     });
+
+    // Start the Visual Drawing Loop (separate from game loop)
+    requestAnimationFrame(drawDebug);
 }
 
-/*
- * This function is called by the Game Loop every frame.
- * It returns a float (0.0 to 1.0) representing current forward "force".
- */
-export function getSwimForce() {
-    // DEBUG: Check what the camera sees
-    if (hands.length > 0) {
-        //console.log("Tracking Hand!", hands[0].wrist);
-    } else {
-        // console.log("Searching for hands...");
-    }
+// --- VISUAL DEBUGGING LOGIC ---
+function setupDebugCanvas() {
+    debugCanvas = document.createElement('canvas');
+    debugCanvas.width = 320;  // Half size is enough for preview
+    debugCanvas.height = 240;
 
-    // 1. Friction (Always slow down if not swimming)
+    // Style it to float in the bottom right corner
+    Object.assign(debugCanvas.style, {
+        position: 'absolute',
+        bottom: '10px',
+        right: '10px',
+        border: '2px solid white',
+        borderRadius: '8px',
+        zIndex: '100', // Ensure it sits on top of Three.js
+        transform: 'scaleX(-1)' // Mirror the entire canvas via CSS so it feels natural
+    });
+
+    document.body.appendChild(debugCanvas);
+    ctx = debugCanvas.getContext('2d');
+}
+
+function drawDebug() {
+    requestAnimationFrame(drawDebug); // Keep looping
+
+    if (!ctx || !video) return;
+
+    // 1. Draw the Video Frame
+    // We draw it at the canvas size
+    ctx.drawImage(video, 0, 0, debugCanvas.width, debugCanvas.height);
+
+    // 2. Draw Hands
+    if (hands.length > 0) {
+        // Calculate scale ratio (since video is 640 but canvas is 320)
+        const scaleX = debugCanvas.width / video.width;
+        const scaleY = debugCanvas.height / video.height;
+
+        for (let hand of hands) {
+            // Color Logic (p5 style)
+            if (hand.handedness === "Left") {
+                ctx.fillStyle = "magenta";
+            } else {
+                ctx.fillStyle = "yellow";
+            }
+
+            // Draw Keypoints
+            for (let keypoint of hand.keypoints) {
+                const x = keypoint.x * scaleX;
+                const y = keypoint.y * scaleY;
+
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI * 2); // Radius 5 circle
+                ctx.fill();
+            }
+        }
+    }
+}
+
+// --- GAME LOGIC ---
+export function getSwimForce() {
     swimIntensity *= 0.96;
 
-    // 2. If we don't see two hands, just return the decaying speed
-    if (hands.length < 2) {
-        return swimIntensity;
-    }
+    if (hands.length < 2) return swimIntensity;
 
-    // 3. Identify Left and Right hands (ml5 usually returns them in order, but checking confidence helps)
     const handA = hands[0];
     const handB = hands[1];
 
-    // 4. Calculate Distance between Wrists
-    // wrist is usually keypoint index 0
     const dx = handA.wrist.x - handB.wrist.x;
     const dy = handA.wrist.y - handB.wrist.y;
-
-    // Euclidean distance (in pixels)
     const currentDist = Math.sqrt(dx*dx + dy*dy);
 
-    // 5. THE STROKE LOGIC
-    // If distance increased significantly since last frame, add force.
     const delta = currentDist - lastWristDist;
-
-    // "20" is the sensitivity threshold.
-    // You must move hands apart faster than 20px/frame to count as a stroke.
     if (delta > 15) {
-        // Add to intensity, capped at 1.0
         swimIntensity += 0.05;
         if (swimIntensity > 1.0) swimIntensity = 1.0;
-
-        // Optional: Log to see if it's working
-        // console.log("Stroke!", swimIntensity.toFixed(2));
     }
 
     lastWristDist = currentDist;
-
-    console.log(swimIntensity);
     return swimIntensity;
 }

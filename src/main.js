@@ -16,7 +16,7 @@ initHandTracking(); // Asks for webcam permission
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;   // smooth motion
 controls.dampingFactor = 0.05;
-controls.target.set(0, 0, 0);    // point camera looks at
+controls.target.set(0, 30, 0);    // point camera looks at
 
 // 4. Loop
 function animate() {
