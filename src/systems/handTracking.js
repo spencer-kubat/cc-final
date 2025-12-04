@@ -102,6 +102,10 @@ function drawDebug() {
     }
 }
 
+export function getRawHands() {
+    return hands;
+}
+
 // --- GAME LOGIC ---
 export function getSwimForce() {
     swimIntensity *= 0.96;

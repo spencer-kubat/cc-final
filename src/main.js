@@ -1,8 +1,11 @@
 import { createScene } from './core/setup.js';
 import { loadEnvironment } from './world/environment.js';
-import { initHandTracking, getSwimForce } from './systems/handTracking.js';
-import { updatePlayer } from './systems/player.js';
-import {OrbitControls} from "three/addons/controls/OrbitControls.js";
+import { initHandTracking, getRawHands } from './systems/handTracking.js';
+// CHANGE 1: Import the new physics function
+import { updatePlayerPhysics } from './systems/player.js';
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { calculateHandState } from "./systems/poseCalculator.js";
+import { updateGestureState } from "./systems/gestureMachine.js";
 
 // 1. Setup
 const { scene, camera, renderer } = createScene();
@@ -11,24 +14,34 @@ const { scene, camera, renderer } = createScene();
 loadEnvironment(scene);
 
 // 3. Start Systems
-initHandTracking(); // Asks for webcam permission
+initHandTracking();
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;   // smooth motion
+controls.enableDamping = true;
 controls.dampingFactor = 0.05;
-controls.target.set(0, 30, 0);    // point camera looks at
+controls.target.set(0, 30, -100); // Look far ahead, not at the floor!
 
 // 4. Loop
 function animate() {
     requestAnimationFrame(animate);
 
-    // Get input and apply to player
-    // const force = getSwimForce();
-    // updatePlayer(camera, force);
+    // A. Hand Tracking Pipeline
+    let handsData = getRawHands();
+    const handState = calculateHandState(handsData);
 
-    controls.update(); // needed if enableDamping = true
+    // (Optional Debug Log)
+    // if (handState.validPose) console.log(handState);
 
-    // Render
+    // B. State Machine
+    const gesture = updateGestureState(handState);
+
+    // C. Physics Engine (CHANGE 2)
+    // We pass 'controls' so the target moves WITH the player
+    updatePlayerPhysics(camera, gesture, controls);
+
+    // Note: You don't need controls.update() here anymore
+    // because updatePlayerPhysics handles it.
+
     renderer.render(scene, camera);
 }
 animate();
