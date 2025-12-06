@@ -3,3 +3,6 @@ To set up project, run the following commands in your IDE terminal after cloning
 2. npm run dev 
 
 This will fire up a localhost environment to view the project in the browser.
+
+For in game camera:
+Default is hand and head tracking controls. Press ENTER to toggle keyboard/mouse controls.
