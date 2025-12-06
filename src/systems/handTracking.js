@@ -1,16 +1,16 @@
 /* global ml5 */
 
+let faceMesh;
 let handPose;
 let video;
+let faces = [];
 let hands = [];
-let swimIntensity = 0;
-let lastWristDist = 0;
 
 // Debugging Variables
 let debugCanvas;
 let ctx;
 
-export async function initHandTracking() {
+export async function initML5Tracking() {
     // 1. Setup Video (Hidden)
     video = document.createElement('video');
     video.playsInline = true;
@@ -23,8 +23,7 @@ export async function initHandTracking() {
     setupDebugCanvas();
 
     // 3. Start Camera
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
+    video.srcObject = await navigator.mediaDevices.getUserMedia({video: true});
     video.play();
 
     video.onloadeddata = () => {
@@ -32,6 +31,14 @@ export async function initHandTracking() {
         // Initialize ML5
         handPose = ml5.handPose({ flipped: false }, modelLoaded);
     };
+
+    const faceOptions = { maxFaces: 1, refineLandmarks: false, flipped: true };
+    faceMesh = ml5.faceMesh(video, faceOptions, () => {
+        console.log("Face Model Loaded");
+        faceMesh.detectStart(video, (results) => {
+            faces = results;
+        });
+    });
 }
 
 function modelLoaded() {
@@ -102,29 +109,10 @@ function drawDebug() {
     }
 }
 
-export function getRawHands() {
+export function getHandData() {
     return hands;
 }
 
-// --- GAME LOGIC ---
-export function getSwimForce() {
-    swimIntensity *= 0.96;
-
-    if (hands.length < 2) return swimIntensity;
-
-    const handA = hands[0];
-    const handB = hands[1];
-
-    const dx = handA.wrist.x - handB.wrist.x;
-    const dy = handA.wrist.y - handB.wrist.y;
-    const currentDist = Math.sqrt(dx*dx + dy*dy);
-
-    const delta = currentDist - lastWristDist;
-    if (delta > 15) {
-        swimIntensity += 0.05;
-        if (swimIntensity > 1.0) swimIntensity = 1.0;
-    }
-
-    lastWristDist = currentDist;
-    return swimIntensity;
+export function getHeadData() {
+    return faces;
 }
