@@ -1,46 +1,63 @@
 import { createScene } from './core/setup.js';
 import { loadEnvironment } from './world/environment.js';
-import { initHandTracking, getRawHands } from './systems/handTracking.js';
-// CHANGE 1: Import the new physics function
+import {initML5Tracking, getHeadData, getHandData} from './systems/handTracking.js';
+import { initKeyboardListeners, updateKeyboardPhysics } from './systems/keyboardControls.js';
 import { updatePlayerPhysics } from './systems/player.js';
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { calculateHandState } from "./systems/poseCalculator.js";
 import { updateGestureState } from "./systems/gestureMachine.js";
+import { updateHeadTracking } from "./systems/headTracking.js";
 
-// 1. Setup
+// setup scene
 const { scene, camera, renderer } = createScene();
 
-// 2. Load World
+// load environment
 loadEnvironment(scene);
 
-// 3. Start Systems
-initHandTracking();
+// start hand and head tracking
+initML5Tracking();
 
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.05;
-controls.target.set(0, 30, -100); // Look far ahead, not at the floor!
+let useKeyboard = false;
+initKeyboardListeners();
 
-// 4. Loop
+// setup pointer lock controls
+const mouseControls = new PointerLockControls(camera, renderer.domElement);
+
+// event listeners to detect when the user breaks out (hits ESC)
+mouseControls.addEventListener('unlock', () => {
+    useKeyboard = false;
+    console.log("Mouse unlocked. Switching back to Hands.");
+});
+
+// enter key to toggle control modes
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        useKeyboard = !useKeyboard;
+        if (useKeyboard) {
+            mouseControls.lock(); // This requests the browser to hide the cursor and lock it.
+        } else {
+            mouseControls.unlock();
+        }
+    }
+});
+
 function animate() {
     requestAnimationFrame(animate);
 
-    // A. Hand Tracking Pipeline
-    let handsData = getRawHands();
-    const handState = calculateHandState(handsData);
+    // check for keyboard mode
+    if (useKeyboard) {
+        updateKeyboardPhysics(camera);
+    }
+    else {
+        let handsData = getHandData();
+        const handState = calculateHandState(handsData);
+        const gesture = updateGestureState(handState);
 
-    // (Optional Debug Log)
-    // if (handState.validPose) console.log(handState);
+        const facesData = getHeadData();
+        updateHeadTracking(camera, facesData);
 
-    // B. State Machine
-    const gesture = updateGestureState(handState);
-
-    // C. Physics Engine (CHANGE 2)
-    // We pass 'controls' so the target moves WITH the player
-    updatePlayerPhysics(camera, gesture, controls);
-
-    // Note: You don't need controls.update() here anymore
-    // because updatePlayerPhysics handles it.
+        updatePlayerPhysics(camera, gesture, handState);
+    }
 
     renderer.render(scene, camera);
 }

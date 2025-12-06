@@ -1,40 +1,26 @@
 // src/systems/player.js
 
-// Physics Constants
-const FRICTION = 0.98;       // Higher = more glide (Ice), Lower = less glide (Mud)
-const ACCELERATION = 0.5;    // Speed added per stroke
-const MAX_SPEED = 0.8;       // Max speed cap
+const FRICTION = 0.98;
+const ACCELERATION = 0.3;
+const MAX_SPEED = 0.5;
 
-let velocityZ = 0; // "Momentum" stored here
+let velocity = 0; // Renamed from velocityZ since it's now directional
 
-export function updatePlayerPhysics(camera, gestureState, controls) {
+export function updatePlayerPhysics(camera, gestureState) {
 
-    // 1. APPLY FORCE (Impulse)
-    // We only add speed on the exact frame the gesture fires
-    if (gestureState === 'forwardSwim') {
-        velocityZ -= ACCELERATION;
-    }
-    else if (gestureState === 'backwardSwim') {
-        velocityZ += ACCELERATION;
-    }
+    // 1. APPLY FORCE
+    // Negative velocity = Forward in Three.js land
+    if (gestureState === 'forwardSwim') velocity -= ACCELERATION;
+    else if (gestureState === 'backwardSwim') velocity += ACCELERATION;
 
     // 2. CAP SPEED
-    if (velocityZ < -MAX_SPEED) velocityZ = -MAX_SPEED;
-    if (velocityZ > MAX_SPEED) velocityZ = MAX_SPEED;
+    if (velocity < -MAX_SPEED) velocity = -MAX_SPEED;
+    if (velocity > MAX_SPEED) velocity = MAX_SPEED;
 
-    // 3. APPLY TO CAMERA
-    camera.position.z += velocityZ;
+    camera.translateZ(velocity);
 
-    // 4. FIX FOR ORBIT CONTROLS (Crucial!)
-    // If you don't move the target, you will walk past it and the camera will flip.
-    if (controls) {
-        controls.target.z += velocityZ;
-        controls.update();
-    }
+    // 4. FRICTION
+    velocity *= FRICTION;
 
-    // 5. FRICTION (Decay)
-    velocityZ *= FRICTION;
-
-    // Clean stop to save CPU
-    if (Math.abs(velocityZ) < 0.001) velocityZ = 0;
+    if (Math.abs(velocity) < 0.01) velocity = 0;
 }
