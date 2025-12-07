@@ -7,6 +7,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { calculateHandState } from "./systems/poseCalculator.js";
 import { updateGestureState } from "./systems/gestureMachine.js";
 import { updateHeadTracking } from "./systems/headTracking.js";
+import { createBubbles, updateBubbles } from './world/effects.js';
 
 // setup scene
 const { scene, camera, renderer } = createScene();
@@ -14,6 +15,8 @@ const { scene, camera, renderer } = createScene();
 // load environment
 loadEnvironment(scene);
 
+// create bubble effects
+createBubbles(scene);
 // start hand and head tracking
 initML5Tracking();
 
@@ -44,6 +47,8 @@ window.addEventListener('keydown', (e) => {
 function animate() {
     requestAnimationFrame(animate);
 
+    //start the bubble particles
+    updateBubbles();
     // check for keyboard mode
     if (useKeyboard) {
         updateKeyboardPhysics(camera);
