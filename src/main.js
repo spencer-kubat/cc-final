@@ -8,7 +8,7 @@ import { calculateHandState } from "./systems/poseCalculator.js";
 import { updateGestureState } from "./systems/gestureMachine.js";
 import { updateHeadTracking } from "./systems/headTracking.js";
 import { createBubbles, updateBubbles } from './world/effects.js';
-import { initAudio, startMusic } from './systems/audio.js';
+import {initAudio, playSwimSound, startAudio} from './systems/audio.js';
 
 // setup scene
 const { scene, camera, renderer } = createScene();
@@ -46,14 +46,12 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-function onUserInteraction() {
-    startMusic();
-    // Remove listener so we don't try to start it 100 times
-    window.removeEventListener('click', onUserInteraction);
-    window.removeEventListener('keydown', onUserInteraction);
-}
-
-window.addEventListener('click', onUserInteraction);
+const overlay = document.getElementById('overlay');
+overlay.addEventListener('click', () => {
+    startAudio();
+    overlay.classList.add('hidden'); // hide overlay
+    document.body.requestFullscreen(); // make fullscreen
+});
 
 function animate() {
     requestAnimationFrame(animate);
@@ -68,6 +66,9 @@ function animate() {
         let handsData = getHandData();
         const handState = calculateHandState(handsData);
         const gesture = updateGestureState(handState);
+        if (gesture === 'forwardSwim' || gesture === 'backwardSwim') {
+            playSwimSound();
+        }
 
         const facesData = getHeadData();
         updateHeadTracking(camera, facesData);
