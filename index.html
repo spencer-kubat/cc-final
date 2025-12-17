@@ -5,9 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://unpkg.com/ml5@1.0.1/dist/ml5.min.js"></script>
     <title>cc-final</title>
+      <style>
+          body { margin: 0; overflow: hidden; font-family: sans-serif; }
+
+          #overlay {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-color: rgba(0, 0, 0, 0.8);
+              color: white;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              z-index: 99;
+              cursor: pointer;
+          }
+
+          #overlay-content {
+              text-align: center;
+          }
+
+          h1 { letter-spacing: 5px; margin-bottom: 10px; }
+          p { font-size: 1.2rem; color: #aaa; }
+
+          .hidden {
+              opacity: 0;
+              pointer-events: none;
+          }
+      </style>
   </head>
   <body>
     <div id="app"></div>
+    <div id="overlay">
+        <div id="overlay-content">
+            <h1>SWIM SIM</h1>
+            <p>Click to Start</p>
+        </div>
+    </div>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

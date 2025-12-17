@@ -1,27 +1,63 @@
 import * as THREE from 'three';
 
-let sound;
+let listener;
+let music;
+let ambient;
+let swimBuffer; // Reusable buffer for swim sounds
 
 export function initAudio(camera) {
-    const listener = new THREE.AudioListener();
+    listener = new THREE.AudioListener();
     camera.add(listener);
-    sound = new THREE.Audio(listener);
 
-    const audioLoader = new THREE.AudioLoader();
-    audioLoader.load('/music.wav', function(buffer) {
-        sound.setBuffer(buffer);
-        sound.setLoop(true);
-        sound.setVolume(0.5);
+    const loader = new THREE.AudioLoader();
 
-        // Note: We don't call play() here immediately to avoid browser errors.
-        // We wait for user interaction.
+    music = new THREE.Audio(listener);
+    loader.load('/music.wav', (buffer) => {
+        music.setBuffer(buffer);
+        music.setLoop(true);
+        music.setVolume(0.2);
+    });
+
+    ambient = new THREE.Audio(listener);
+    loader.load('/ambient.wav', (buffer) => {
+        ambient.setBuffer(buffer);
+        ambient.setLoop(true);
+        ambient.setVolume(0.6);
+    });
+
+    // --- TRACK 3: SWIM SFX (One-Shot) ---
+    // Note: Rename your file to .flac if it is a FLAC file!
+    loader.load('/swim.mp3', (buffer) => {
+        swimBuffer = buffer;
     });
 }
 
-// Call this when the user clicks or presses a key for the first time
-export function startMusic() {
-    if (sound && !sound.isPlaying) {
-        sound.play();
-        console.log("Music Started");
+
+export function startAudio() {
+    // Resume context (Browser requirement)
+    if (listener.context.state === 'suspended') {
+        listener.context.resume();
     }
+
+    if (music && !music.isPlaying) {
+        music.play();
+    }
+
+    if (ambient && !ambient.isPlaying) {
+        ambient.play();
+    }
+}
+
+export function playSwimSound() {
+    if (!swimBuffer) return;
+
+    // Create a fresh audio source for this specific splash
+    const sfx = new THREE.Audio(listener);
+    sfx.setBuffer(swimBuffer);
+
+    // Randomize pitch (0.9 to 1.1) for variety
+    sfx.setDetune((Math.random() * 200) - 100);
+    sfx.setVolume(0.8);
+
+    sfx.play();
 }
