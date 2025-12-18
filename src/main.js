@@ -8,7 +8,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { calculateHandState } from "./systems/poseCalculator.js";
 import { updateGestureState } from "./systems/gestureMachine.js";
 import { updateHeadTracking } from "./systems/headTracking.js";
-import { createBubbles, updateBubbles } from './world/effects.js';
+import { createBubbles, updateBubbles, createSeaweed,updateSeaweed} from './world/effects.js';
 import {initAudio, playSwimSound, startAudio} from './systems/audio.js';
 
 /**might need to adjust these bounds later
@@ -36,7 +36,8 @@ loadEnvironment(scene);
 createBubbles(scene);
 // start hand and head tracking
 initML5Tracking();
-
+//create seaweed effects
+createSeaweed(scene);
 let useKeyboard = false;
 initKeyboardListeners();
 
@@ -67,6 +68,8 @@ overlay.addEventListener('click', () => {
     overlay.classList.add('hidden'); // hide overlay
     document.body.requestFullscreen(); // make fullscreen
 });
+
+//current bounds
 function clampCamera(camera) {
   camera.position.x = THREE.MathUtils.clamp(
     camera.position.x,
@@ -87,12 +90,16 @@ function clampCamera(camera) {
   );
 }
 
+
+
 function animate() {
     requestAnimationFrame(animate);
 
     //start the bubble particles
     updateBubbles();
     // check for keyboard mode
+    //
+    
     if (useKeyboard) {
         updateKeyboardPhysics(camera);
         clampCamera(camera);
@@ -111,7 +118,7 @@ function animate() {
         updatePlayerPhysics(camera, gesture, handState);
         clampCamera(camera);
     }
-    
+    updateSeaweed();
     renderer.render(scene, camera);
 }
 animate();
