@@ -12,22 +12,20 @@ export function initAudio(camera) {
     const loader = new THREE.AudioLoader();
 
     music = new THREE.Audio(listener);
-    loader.load('/music.wav', (buffer) => {
+    loader.load(`${import.meta.env.BASE_URL}music.wav`, (buffer) => {
         music.setBuffer(buffer);
         music.setLoop(true);
         music.setVolume(0.2);
     });
 
     ambient = new THREE.Audio(listener);
-    loader.load('/ambient.wav', (buffer) => {
+    loader.load(`${import.meta.env.BASE_URL}ambient.wav`, (buffer) => {
         ambient.setBuffer(buffer);
         ambient.setLoop(true);
         ambient.setVolume(0.6);
     });
 
-    // --- TRACK 3: SWIM SFX (One-Shot) ---
-    // Note: Rename your file to .flac if it is a FLAC file!
-    loader.load('/swim.mp3', (buffer) => {
+    loader.load(`${import.meta.env.BASE_URL}swim.mp3`, (buffer) => {
         swimBuffer = buffer;
     });
 }

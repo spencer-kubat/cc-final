@@ -52,7 +52,6 @@ export function calculateHandState(hands) {
     let rightHandPalmDown = (Math.abs(rightHand.index_finger_mcp.y - rightHand.pinky_finger_mcp.y) < 30);
 
     state.palmsDown = leftHandPalmDown && rightHandPalmDown;
-    console.log(state.palmsDown);
 
     // let leftThumbPinkyDistanceY = leftHand.thumb_tip.y - leftHand.pinky_finger_tip.y;
     // let rightThumbPinkyDistanceY = rightHand.thumb_tip.y - rightHand.pinky_finger_tip.y;

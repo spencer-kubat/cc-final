@@ -16,7 +16,6 @@ export function updateGestureState(handData) {
 
     switch (currentState) {
 
-        // --- 1. IDLE (Waiting to start) ---
         case states.idle:
             // Entry Rule: Hands must be close AND thumbs down
             if (handData.areHandsClose && handData.thumbsDown) {
@@ -30,11 +29,9 @@ export function updateGestureState(handData) {
             if (handData.areHandsClose && handData.thumbsDown) {
                 primeTimestamp = now;
             }
-            // LOGIC B: THE CHECK
             // If hands are NOT close, we are in the "Gap". Check time.
             const timeSinceLeftSafeZone = now - primeTimestamp;
             if (timeSinceLeftSafeZone > 3000) {
-                console.log("Too slow! Stroke cancelled.");
                 enterState(states.idle);
                 return states.idle;
             }
@@ -53,7 +50,6 @@ export function updateGestureState(handData) {
             }
             const timeSinceLeftSafeZones = now - primeTimestamp;
             if (timeSinceLeftSafeZones > 3000) {
-                console.log("Too slow! Stroke cancelled.");
                 enterState(states.idle);
                 return states.idle;
             }
@@ -62,7 +58,6 @@ export function updateGestureState(handData) {
             }
             break;
 
-        // --- 3. SWIMMING (The Action) ---
         case states.forwardSwim:
             enterState(states.idle);
             break;
@@ -79,5 +74,4 @@ export function updateGestureState(handData) {
 function enterState(newState) {
     currentState = newState;
     primeTimestamp = Date.now(); // Initialize timer on entry
-    console.log(`State Changed: ${newState}`);
 }
