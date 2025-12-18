@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { createSeaweed } from './effects.js'
+
 
 export function loadEnvironment(scene) {
     // AboveWater LIGHT
@@ -17,6 +19,8 @@ export function loadEnvironment(scene) {
 
             scene.add(gltf.scene);
             console.log("Model loaded", gltf);
+            // Register seaweed after the model is loaded
+            createSeaweed(gltf.scene);
         },
         function (xhr) {
             console.log((xhr.loaded / xhr.total * 100) + '% loaded');
