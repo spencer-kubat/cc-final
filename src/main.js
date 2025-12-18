@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { createScene } from './core/setup.js';
 import { loadEnvironment } from './world/environment.js';
 import {initML5Tracking, getHeadData, getHandData} from './systems/handTracking.js';
@@ -9,6 +10,20 @@ import { updateGestureState } from "./systems/gestureMachine.js";
 import { updateHeadTracking } from "./systems/headTracking.js";
 import { createBubbles, updateBubbles } from './world/effects.js';
 import {initAudio, playSwimSound, startAudio} from './systems/audio.js';
+
+/**might need to adjust these bounds later
+bounds are currently set for the environment for hard bounds we can adjust as needed
+Currently still clipping through the parts of the environment that are raised. Need to fix by using the blender floor plane's y values with the camera's values so we don't pass through at any point 
+*/
+const BOUNDS = {
+  minX: -45,
+  maxX:  45,
+  minY:  5,   
+  maxY:  80,   
+  minZ: -60,
+  maxZ:  58
+
+};
 
 // setup scene
 const { scene, camera, renderer } = createScene();
@@ -52,6 +67,25 @@ overlay.addEventListener('click', () => {
     overlay.classList.add('hidden'); // hide overlay
     document.body.requestFullscreen(); // make fullscreen
 });
+function clampCamera(camera) {
+  camera.position.x = THREE.MathUtils.clamp(
+    camera.position.x,
+    BOUNDS.minX,
+    BOUNDS.maxX
+  );
+
+  camera.position.y = THREE.MathUtils.clamp(
+    camera.position.y,
+    BOUNDS.minY,
+    BOUNDS.maxY
+  );
+
+  camera.position.z = THREE.MathUtils.clamp(
+    camera.position.z,
+    BOUNDS.minZ,
+    BOUNDS.maxZ
+  );
+}
 
 function animate() {
     requestAnimationFrame(animate);
@@ -61,6 +95,7 @@ function animate() {
     // check for keyboard mode
     if (useKeyboard) {
         updateKeyboardPhysics(camera);
+        clampCamera(camera);
     }
     else {
         let handsData = getHandData();
@@ -74,8 +109,9 @@ function animate() {
         updateHeadTracking(camera, facesData);
 
         updatePlayerPhysics(camera, gesture, handState);
+        clampCamera(camera);
     }
-
+    
     renderer.render(scene, camera);
 }
 animate();
