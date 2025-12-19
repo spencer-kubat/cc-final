@@ -8,22 +8,26 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { calculateHandState } from "./systems/poseCalculator.js";
 import { updateGestureState } from "./systems/gestureMachine.js";
 import { updateHeadTracking } from "./systems/headTracking.js";
-import { createBubbles, updateBubbles, createSeaweed,updateSeaweed} from './world/effects.js';
+import {
+  createBubbles,
+  updateBubbles,
+  createSeaweed,
+  updateSeaweed,
+  createFish,
+  updateFish
+} from './world/effects.js';
 import {initAudio, playSwimSound, startAudio} from './systems/audio.js';
+import { getFloorPlane } from './world/environment.js';
 
 /**might need to adjust these bounds later
 bounds are currently set for the environment for hard bounds we can adjust as needed
 Currently still clipping through the parts of the environment that are raised. Need to fix by using the blender floor plane's y values with the camera's values so we don't pass through at any point 
 */
-const BOUNDS = {
-  minX: -45,
-  maxX:  45,
-  minY:  5,   
-  maxY:  80,   
-  minZ: -60,
-  maxZ:  58
 
-};
+const downRay = new THREE.Raycaster();
+const DOWN = new THREE.Vector3(0, -1, 0);
+const CAMERA_HEIGHT = 1.6;
+
 
 // setup scene
 const { scene, camera, renderer } = createScene();
@@ -70,27 +74,23 @@ overlay.addEventListener('click', () => {
 });
 
 //current bounds
-function clampCamera(camera) {
-  camera.position.x = THREE.MathUtils.clamp(
-    camera.position.x,
-    BOUNDS.minX,
-    BOUNDS.maxX
-  );
+function clampCameraToGround(camera, scene) {
+  downRay.set(camera.position, DOWN);
 
-  camera.position.y = THREE.MathUtils.clamp(
-    camera.position.y,
-    BOUNDS.minY,
-    BOUNDS.maxY
-  );
+  const hits = downRay.intersectObjects(scene.children, true);
+  if (hits.length === 0) return;
 
-  camera.position.z = THREE.MathUtils.clamp(
-    camera.position.z,
-    BOUNDS.minZ,
-    BOUNDS.maxZ
-  );
+  const groundY = hits[0].point.y + CAMERA_HEIGHT;
+
+  if (camera.position.y < groundY) {
+    camera.position.y = groundY;
+  }
 }
 
-
+const fishes = [];
+for (let i = 0; i < 10; i++) {
+    fishes.push(createFish(scene));
+}
 
 function animate() {
     requestAnimationFrame(animate);
@@ -99,10 +99,13 @@ function animate() {
     updateBubbles();
     // check for keyboard mode
     //
-    
+    for (const f of fishes) {
+    updateFish(f);
+    }
+
     if (useKeyboard) {
         updateKeyboardPhysics(camera);
-        clampCamera(camera);
+        clampCameraToGround(camera, scene);
     }
     else {
         let handsData = getHandData();
@@ -116,7 +119,7 @@ function animate() {
         updateHeadTracking(camera, facesData);
 
         updatePlayerPhysics(camera, gesture, handState);
-        clampCamera(camera);
+        clampCameraToGround(camera, scene);
     }
     updateSeaweed();
     renderer.render(scene, camera);
