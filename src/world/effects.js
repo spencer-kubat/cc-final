@@ -1,12 +1,12 @@
 // src/world/effects.js
 import * as THREE from 'three';
 
-const bubbles = [];   // <— no "let" needed, we only mutate contents
+const bubbles = [];
+const bubbleCount = 300;
+const spawnRange = 120;
 
 // create bubbles and add to scene
 export function createBubbles(scene) {
-  const bubbleCount = 200;
-
   const bubbleGeometry = new THREE.SphereGeometry(0.1, 8, 8);
   const bubbleMaterial = new THREE.MeshBasicMaterial({
     color: 0xffffff,
@@ -18,9 +18,9 @@ export function createBubbles(scene) {
     const b = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
 
     b.position.set(
-      (Math.random() - 0.5) * 100,
+      (Math.random() - 0.5) * spawnRange,
       Math.random() * 60,
-      (Math.random() - 0.5) * 100
+      (Math.random() - 0.5) * spawnRange
     );
 
     scene.add(b);
@@ -29,20 +29,25 @@ export function createBubbles(scene) {
 }
 
 // update bubbles
-export function updateBubbles() {
-  for (const b of bubbles) {
-    b.position.y += 0.03;
+export function updateBubbles(camera) {
+    const camPos = camera.position;
 
-    if (b.position.y > 60) {
-      b.position.y = 0;
-      b.position.x = (Math.random() - 0.5) * 100;
-      b.position.z = (Math.random() - 0.5) * 100;
+    for (const b of bubbles) {
+        b.position.y += 0.03;
+
+        if (b.position.x < camPos.x - spawnRange/2) b.position.x += spawnRange;
+        if (b.position.x > camPos.x + spawnRange/2) b.position.x -= spawnRange;
+
+        // check Z Axis (swimming direction)
+        if (b.position.z < camPos.z - spawnRange/2) b.position.z += spawnRange;
+        if (b.position.z > camPos.z + spawnRange/2) b.position.z -= spawnRange;
+
+        if (b.position.y > camPos.y + 20) b.position.y -= 40;
+        if (b.position.y < camPos.y - 20) b.position.y += 40;
     }
-  }
 }
 
 //attempt at making the seaweed ripple
-
 const seaweed = []; 
 export function createSeaweed(root) {
   seaweed.length = 0;
@@ -90,80 +95,87 @@ export function updateSeaweed() {
   }
 }
 
-const FISH_BOUNDS = {
- 
-  minY:  5,
-  maxY:  80,
-
-};
+// --- FISH CONFIGURATION ---
+const fishes = [];
+const FISH_COUNT = 40;
+const FISH_RANGE = 120;
 
 export function createFish(scene) {
-  const shape = new THREE.Shape();
+    // OPTIMIZATION: Create the shape and geometry ONCE, then reuse it.
+    const shape = new THREE.Shape();
+    shape.moveTo(-0.6, 0);
+    shape.quadraticCurveTo(0, 0.4, 0.6, 0);
+    shape.quadraticCurveTo(0, -0.4, -0.6, 0);
+    // Tail
+    shape.lineTo(-1.0, 0.3);
+    shape.lineTo(-0.9, 0);
+    shape.lineTo(-1.0, -0.3);
+    shape.lineTo(-0.6, 0);
 
-  shape.moveTo(-0.6, 0);
-  shape.quadraticCurveTo(0, 0.4, 0.6, 0);
-  shape.quadraticCurveTo(0, -0.4, -0.6, 0);
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+        depth: 0.1,
+        bevelEnabled: false
+    });
 
+    // Black silhouette for contrast
+    const material = new THREE.MeshBasicMaterial({
+        color: 0x111111,
+        side: THREE.DoubleSide
+    });
 
-  shape.lineTo(-1.0, 0.3);
-  shape.lineTo(-0.9, 0);
-  shape.lineTo(-1.0, -0.3);
-  shape.lineTo(-0.6, 0);
+    geometry.rotateY(-Math.PI / 2);
 
-  const geometry = new THREE.ExtrudeGeometry(shape, {
-  depth: 0.15,        // thickness
-  bevelEnabled: false
-});
-  const material = new THREE.MeshBasicMaterial({
-    color: 0x000000,
-    side: THREE.DoubleSide
-  });
+    for (let i = 0; i < FISH_COUNT; i++) {
+        const mesh = new THREE.Mesh(geometry, material);
 
-  const mesh = new THREE.Mesh(geometry, material);
+        // Random Position
+        mesh.position.set(
+            (Math.random() - 0.5) * FISH_RANGE,
+            Math.random() * 40 + 5, // Keep them somewhat near the floor/mid-water
+            (Math.random() - 0.5) * FISH_RANGE
+        );
 
-  //mesh.rotation.y = Math.PI;
+        // Random Rotation (facing direction)
+        const angle = Math.random() * Math.PI * 2;
+        mesh.rotation.y = angle;
 
-  mesh.position.set(
-    THREE.MathUtils.randFloat(-30, 30),
-    THREE.MathUtils.randFloat(10, 50),
-    THREE.MathUtils.randFloat(-30, 30)
-  );
+        scene.add(mesh);
 
-  scene.add(mesh);
-
-  return {
-    mesh,
-    direction: new THREE.Vector3(
-      Math.random() - 0.5,
-      0,
-      Math.random() - 0.5
-    ).normalize(),
-    speed: THREE.MathUtils.randFloat(0.02, 0.05),
-    phase: Math.random() * Math.PI * 2
-  };
+        fishes.push({
+            mesh,
+            // Store the velocity vector based on rotation
+            direction: new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle)).normalize(),
+            speed: THREE.MathUtils.randFloat(0.05, 0.1), // Swim speed
+            phase: Math.random() * Math.PI * 2 // For the wiggle animation
+        });
+    }
 }
 
+export function updateFish(camera) {
+    const camPos = camera.position;
+    const time = performance.now() / 1000;
+
+    for (const fish of fishes) {
+        // Move along the direction vector
+        fish.mesh.position.addScaledVector(fish.direction, fish.speed);
+
+        // 2. WIGGLE ANIMATION (Visual only)
+        // We gently rock the fish left/right to look alive
+        // We add the wiggle to the base rotation
+        const baseRotation = Math.atan2(fish.direction.x, fish.direction.z);
+        fish.mesh.rotation.y = baseRotation + Math.sin(time * 10 + fish.phase) * 0.1;
 
 
-export function updateFish(fish) {
-  // move forward
-  const forward = new THREE.Vector3(1, 0, 0);
-forward.applyQuaternion(fish.mesh.quaternion);
-fish.mesh.position.addScaledVector(forward, fish.speed);
+        // Same logic as bubbles, but for X and Z primarily
 
-  // face movement direction (NO sideways sliding)
-  const angle = Math.atan2(fish.direction.x, fish.direction.z);
-  fish.mesh.rotation.y = angle;
-  
+        if (fish.mesh.position.x < camPos.x - FISH_RANGE / 2) fish.mesh.position.x += FISH_RANGE;
+        if (fish.mesh.position.x > camPos.x + FISH_RANGE / 2) fish.mesh.position.x -= FISH_RANGE;
 
-  // bounds bounce
+        if (fish.mesh.position.z < camPos.z - FISH_RANGE / 2) fish.mesh.position.z += FISH_RANGE;
+        if (fish.mesh.position.z > camPos.z + FISH_RANGE / 2) fish.mesh.position.z -= FISH_RANGE;
 
-  if (fish.mesh.position.y < FISH_BOUNDS.minY || fish.mesh.position.y > FISH_BOUNDS.maxY)
-    fish.direction.y *= -1;
+        // Check Y Axis (Height - keep them from flying to space or digging underground)
+        if (fish.mesh.position.y > camPos.y + 30) fish.mesh.position.y -= 50;
+        if (fish.mesh.position.y < camPos.y - 20) fish.mesh.position.y += 50;
+    }
 }
-
-
-
-
-
-

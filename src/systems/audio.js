@@ -30,7 +30,6 @@ export function initAudio(camera) {
     });
 }
 
-
 export function startAudio() {
     // Resume context (Browser requirement)
     if (listener.context.state === 'suspended') {
@@ -53,7 +52,6 @@ export function playSwimSound() {
     const sfx = new THREE.Audio(listener);
     sfx.setBuffer(swimBuffer);
 
-    // Randomize pitch (0.9 to 1.1) for variety
     sfx.setDetune((Math.random() * 200) - 100);
     sfx.setVolume(0.8);
 
