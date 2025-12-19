@@ -1,7 +1,6 @@
 // src/systems/faceSteering.js
 
-// CONFIG
-const DEADZONE = 0.1;     // Smaller deadzone needed now!
+const DEADZONE = 0.1;
 const SENSITIVITY = 0.03;
 const MAX_LOOK_ANGLE = 1.5;
 const PITCH_OFFSET = 0.15;
@@ -11,17 +10,13 @@ export function updateHeadTracking(camera, facesData) {
 
     const face = facesData[0];
     const nose = face.keypoints[1];
-    const leftCheek = face.keypoints[454];  // Left edge of face
-    const rightCheek = face.keypoints[234]; // Right edge of face
+    const leftCheek = face.keypoints[454];  // left edge of face
+    const rightCheek = face.keypoints[234]; // right edge of face
 
-    // --- 1. CALCULATE YAW (Turning Left/Right) ---
-    // Instead of screen position, we calculate the ratio of the nose
-    // between the two cheeks.
-
-    // Distance from Left Cheek to Right Cheek (Total Face Width)
+    // distance from left cheek to right cheek (total face width)
     const faceWidth = Math.abs(leftCheek.x - rightCheek.x);
 
-    // Distance from Left Cheek to Nose
+    // Distance from left cheek to nose
     const leftToNose = Math.abs(leftCheek.x - nose.x);
 
     // Calculate Ratio (0.0 to 1.0)

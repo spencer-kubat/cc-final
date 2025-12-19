@@ -1,6 +1,5 @@
-import * as THREE from 'three';
 import { createScene } from './core/setup.js';
-import { loadEnvironment } from './world/environment.js';
+import { loadEnvironment, updateEnvironment } from './world/environment.js';
 import {initML5Tracking, getHeadData, getHandData} from './systems/handTracking.js';
 import { initKeyboardListeners, updateKeyboardPhysics } from './systems/keyboardControls.js';
 import { updatePlayerPhysics } from './systems/player.js';
@@ -8,41 +7,22 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { calculateHandState } from "./systems/poseCalculator.js";
 import { updateGestureState } from "./systems/gestureMachine.js";
 import { updateHeadTracking } from "./systems/headTracking.js";
-import {
-  createBubbles,
-  updateBubbles,
-  createSeaweed,
-  updateSeaweed,
-  createFish,
-  updateFish
-} from './world/effects.js';
+import { createBubbles, updateBubbles, createSeaweed,updateSeaweed, createFish, updateFish} from './world/effects.js';
 import {initAudio, playSwimSound, startAudio} from './systems/audio.js';
-import { getFloorPlane } from './world/environment.js';
 
-/**might need to adjust these bounds later
-bounds are currently set for the environment for hard bounds we can adjust as needed
-Currently still clipping through the parts of the environment that are raised. Need to fix by using the blender floor plane's y values with the camera's values so we don't pass through at any point 
-*/
-
-const downRay = new THREE.Raycaster();
-const DOWN = new THREE.Vector3(0, -1, 0);
-const CAMERA_HEIGHT = 1.6;
-
+const floorY = 6.0;
+const playerHeight = 2.0;
+let useKeyboard = false;
 
 // setup scene
 const { scene, camera, renderer } = createScene();
+
 initAudio(camera);
-
-// load environment
-loadEnvironment(scene);
-
-// create bubble effects
-createBubbles(scene);
-// start hand and head tracking
-initML5Tracking();
-//create seaweed effects
-createSeaweed(scene);
-let useKeyboard = false;
+loadEnvironment(scene); // load environment
+createBubbles(scene); // create bubble effects
+createFish(scene); // create fish effects
+initML5Tracking(); // start hand and head tracking
+createSeaweed(scene); //create seaweed effects
 initKeyboardListeners();
 
 // setup pointer lock controls
@@ -74,38 +54,23 @@ overlay.addEventListener('click', () => {
 });
 
 //current bounds
-function clampCameraToGround(camera, scene) {
-  downRay.set(camera.position, DOWN);
+function clampCameraToGround(camera) {
+    const minHeight = floorY + playerHeight;
 
-  const hits = downRay.intersectObjects(scene.children, true);
-  if (hits.length === 0) return;
-
-  const groundY = hits[0].point.y + CAMERA_HEIGHT;
-
-  if (camera.position.y < groundY) {
-    camera.position.y = groundY;
-  }
-}
-
-const fishes = [];
-for (let i = 0; i < 30; i++) {
-    fishes.push(createFish(scene));
+    if (camera.position.y < minHeight) {
+        camera.position.y = minHeight;
+    }
 }
 
 function animate() {
     requestAnimationFrame(animate);
 
-    //start the bubble particles
-    updateBubbles();
-    // check for keyboard mode
-    //232
-    for (const f of fishes) {
-    updateFish(f);
-    }
+    updateBubbles(camera);
+    updateFish(camera);
 
     if (useKeyboard) {
         updateKeyboardPhysics(camera);
-        clampCameraToGround(camera, scene);
+        clampCameraToGround(camera);
     }
     else {
         let handsData = getHandData();
@@ -119,9 +84,11 @@ function animate() {
         updateHeadTracking(camera, facesData);
 
         updatePlayerPhysics(camera, gesture, handState);
-        clampCameraToGround(camera, scene);
+        clampCameraToGround(camera);
     }
     updateSeaweed();
     renderer.render(scene, camera);
+
+    updateEnvironment(camera);
 }
 animate();

@@ -33,9 +33,9 @@ export function calculateHandState(hands) {
     state.fingerDistance = Math.sqrt(fingerDistanceX*fingerDistanceX + fingerDistanceY*fingerDistanceY);
     //console.log(state.fingerDistance);
 
-    if (state.fingerDistance < 150) {
+    if (state.fingerDistance < 75) {
         state.areHandsClose = true;
-    } else if (state.fingerDistance > 350) {
+    } else if (state.fingerDistance > 175) {
         state.areHandsFar = true;
     }
 
@@ -48,8 +48,8 @@ export function calculateHandState(hands) {
         state.thumbsDown = false;
     }
 
-    let leftHandPalmDown = (Math.abs(leftHand.index_finger_mcp.y - leftHand.pinky_finger_mcp.y) < 30);
-    let rightHandPalmDown = (Math.abs(rightHand.index_finger_mcp.y - rightHand.pinky_finger_mcp.y) < 30);
+    let leftHandPalmDown = (Math.abs(leftHand.index_finger_mcp.y - leftHand.pinky_finger_mcp.y) < 15);
+    let rightHandPalmDown = (Math.abs(rightHand.index_finger_mcp.y - rightHand.pinky_finger_mcp.y) < 15);
 
     state.palmsDown = leftHandPalmDown && rightHandPalmDown;
 
