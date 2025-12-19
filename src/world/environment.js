@@ -29,12 +29,12 @@ export function loadEnvironment(scene) {
     console.log("Model loaded", gltf);
 
  
-    gltf.scene.traverse((child) => {
+     gltf.scene.traverse((child) => {
       if (child.name === 'Plane') {
-        floorPlane = child;
+        floorY = child.getWorldPosition(new THREE.Vector3()).y;
       }
     });
-
+    
     // Register seaweed after the model is loaded
     createSeaweed(gltf.scene);
   },
