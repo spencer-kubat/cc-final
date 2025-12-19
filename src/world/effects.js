@@ -90,6 +90,78 @@ export function updateSeaweed() {
   }
 }
 
+const FISH_BOUNDS = {
+  minX: -45,
+  maxX:  45,
+  minY:  5,
+  maxY:  80,
+  minZ: -60,
+  maxZ:  58
+};
+
+export function createFish(scene) {
+  const shape = new THREE.Shape();
+
+  shape.moveTo(-0.6, 0);
+  shape.quadraticCurveTo(0, 0.4, 0.6, 0);
+  shape.quadraticCurveTo(0, -0.4, -0.6, 0);
+
+
+  shape.lineTo(-1.0, 0.3);
+  shape.lineTo(-0.9, 0);
+  shape.lineTo(-1.0, -0.3);
+  shape.lineTo(-0.6, 0);
+
+  const geometry = new THREE.ShapeGeometry(shape);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x000000,
+    side: THREE.DoubleSide
+  });
+
+  const mesh = new THREE.Mesh(geometry, material);
+
+  mesh.rotation.y = Math.PI;
+
+  mesh.position.set(
+    THREE.MathUtils.randFloat(-30, 30),
+    THREE.MathUtils.randFloat(10, 50),
+    THREE.MathUtils.randFloat(-30, 30)
+  );
+
+  scene.add(mesh);
+
+  return {
+    mesh,
+    direction: new THREE.Vector3(
+      Math.random() - 0.5,
+      0,
+      Math.random() - 0.5
+    ).normalize(),
+    speed: THREE.MathUtils.randFloat(0.02, 0.05),
+    phase: Math.random() * Math.PI * 2
+  };
+}
+
+
+
+export function updateFish(fish) {
+  // move forward
+  fish.mesh.position.addScaledVector(fish.direction, fish.speed);
+
+  // face movement direction (NO sideways sliding)
+  const angle = Math.atan2(fish.direction.x, fish.direction.z);
+  fish.mesh.rotation.y = angle;
+
+  // bounds bounce
+  if (fish.mesh.position.x < FISH_BOUNDS.minX || fish.mesh.position.x > FISH_BOUNDS.maxX)
+    fish.direction.x *= -1;
+
+  if (fish.mesh.position.z < FISH_BOUNDS.minZ || fish.mesh.position.z > FISH_BOUNDS.maxZ)
+    fish.direction.z *= -1;
+
+  if (fish.mesh.position.y < FISH_BOUNDS.minY || fish.mesh.position.y > FISH_BOUNDS.maxY)
+    fish.direction.y *= -1;
+}
 
 
 
