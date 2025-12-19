@@ -88,7 +88,7 @@ function clampCameraToGround(camera, scene) {
 }
 
 const fishes = [];
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 30; i++) {
     fishes.push(createFish(scene));
 }
 
@@ -98,7 +98,7 @@ function animate() {
     //start the bubble particles
     updateBubbles();
     // check for keyboard mode
-    //
+    //232
     for (const f of fishes) {
     updateFish(f);
     }

@@ -53,7 +53,7 @@ export function createSeaweed(root) {
 
   seaweed.push({
     mesh: child,
-    original: pos.array.slice(),   // ✅ store original vertex positions
+    original: pos.array.slice(),   
     offset: Math.random() * Math.PI * 2
   });
     }
@@ -91,12 +91,10 @@ export function updateSeaweed() {
 }
 
 const FISH_BOUNDS = {
-  minX: -45,
-  maxX:  45,
+ 
   minY:  5,
   maxY:  80,
-  minZ: -60,
-  maxZ:  58
+
 };
 
 export function createFish(scene) {
@@ -112,7 +110,10 @@ export function createFish(scene) {
   shape.lineTo(-1.0, -0.3);
   shape.lineTo(-0.6, 0);
 
-  const geometry = new THREE.ShapeGeometry(shape);
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+  depth: 0.15,        // thickness
+  bevelEnabled: false
+});
   const material = new THREE.MeshBasicMaterial({
     color: 0x000000,
     side: THREE.DoubleSide
@@ -120,7 +121,7 @@ export function createFish(scene) {
 
   const mesh = new THREE.Mesh(geometry, material);
 
-  mesh.rotation.y = Math.PI;
+  //mesh.rotation.y = Math.PI;
 
   mesh.position.set(
     THREE.MathUtils.randFloat(-30, 30),
@@ -146,18 +147,16 @@ export function createFish(scene) {
 
 export function updateFish(fish) {
   // move forward
-  fish.mesh.position.addScaledVector(fish.direction, fish.speed);
+  const forward = new THREE.Vector3(1, 0, 0);
+forward.applyQuaternion(fish.mesh.quaternion);
+fish.mesh.position.addScaledVector(forward, fish.speed);
 
   // face movement direction (NO sideways sliding)
   const angle = Math.atan2(fish.direction.x, fish.direction.z);
   fish.mesh.rotation.y = angle;
+  
 
   // bounds bounce
-  if (fish.mesh.position.x < FISH_BOUNDS.minX || fish.mesh.position.x > FISH_BOUNDS.maxX)
-    fish.direction.x *= -1;
-
-  if (fish.mesh.position.z < FISH_BOUNDS.minZ || fish.mesh.position.z > FISH_BOUNDS.maxZ)
-    fish.direction.z *= -1;
 
   if (fish.mesh.position.y < FISH_BOUNDS.minY || fish.mesh.position.y > FISH_BOUNDS.maxY)
     fish.direction.y *= -1;
